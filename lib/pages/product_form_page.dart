@@ -71,7 +71,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
     return isValidUrl && endsWithFile;
   }
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     final isValid = _formKey.currentState?.validate() ?? false;
 
     if (!isValid) {
@@ -83,16 +83,30 @@ class _ProductFormPageState extends State<ProductFormPage> {
     setState(() {
       _isLoading = true;
     });
-
-    Provider.of<ProductList>(
-      context,
-      listen: false,
-    ).saveProduct(_formData).then((value) {
-      setState(() {
-        _isLoading = false;
-      });
+    try {
+      await Provider.of<ProductList>(
+        context,
+        listen: false,
+      ).saveProduct(_formData);
+    } catch (error) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('Ocorreu um erro!'),
+          content: Text('Ocorreu um erro ao salvar o produto.'),
+          actions: [
+            TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('Ok'))
+          ],
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
       Navigator.of(context).pop();
-    });
+    }
   }
 
   @override
@@ -217,16 +231,15 @@ class _ProductFormPageState extends State<ProductFormPage> {
                             left: 10,
                           ),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey, width: 1),
+                            border: Border.all(
+                              color: Colors.grey,
+                              width: 1,
+                            ),
                           ),
                           alignment: Alignment.center,
                           child: _imageUrlController.text.isEmpty
                               ? Text('Informe a Url')
-                              : FittedBox(
-                                  child:
-                                      Image.network(_imageUrlController.text),
-                                  fit: BoxFit.cover,
-                                ),
+                              : Image.network(_imageUrlController.text),
                         )
                       ],
                     ),
